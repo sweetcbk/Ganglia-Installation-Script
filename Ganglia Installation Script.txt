@@ -1,0 +1,198 @@
+https://www.tecmint.com/install-configure-ganglia-monitoring-centos-linux/
+https://www.slothparadise.com/how-to-install-ganglia-on-centos-7/
+http://192.168.174.167/ganglia/
+
+
+
+
+
+
+
+
+
+
+Rushi Command:
+-----------------------
+
+On Master Node:    
+	
+	1  systemctl status firewalld.service 
+    2  systemctl stop firewalld.service 
+    3  ssh 192.168.174.146
+    4  hostnamectl set-hostname ganglia-server
+    5  systemctl stop firewalld
+    6  vi /etc/selinux/config
+    7  systemctl enable firewalld
+    8  systemctl stop firewalld
+    9  systemctl disable firewalld
+   10  reboot
+   11  ssh-keygen 
+   12  vi /etc/hosts
+   13  ssh-copy-id root@ganglia-client
+   14  ssh ganglia-client
+   15  ping ganglia-client
+   16  yum install epel-release
+   17  yum install ganglia rrdtool ganglia-gmetad ganglia-gmond ganglia-web 
+   18  kill -9 3224
+   19  yum install ganglia rrdtool ganglia-gmetad ganglia-gmond ganglia-web
+   20  htpasswd -c /etc/httpd/auth.basic adminganglia
+   21  vi  /etc/httpd/conf.d/ganglia.conf
+   22  vi  /etc/ganglia/gmetad.conf
+   23  vi /etc/ganglia/gmond.conf
+   24  setsebool -P httpd_can_network_connect 1
+   25  systemctl restart httpd gmetad gmond
+   26  systemctl enable httpd gmetad httpd
+   27  ip a
+   28  vi /etc/ganglia/gmond.conf
+   29  scp /etc/ganglia/gmond.conf root@ganglia-client:/etc/ganglia/gmond.conf
+
+
+On Client Node:
+
+    1  systemctl status firewalld.service 
+    2  systemctl stop firewalld.service 
+    3  ssh 192.168.174.146
+    4  hostnamectl set-hostname ganglia-client
+    5  systemctl stop firewalld
+    6  systemctl disable firewalld
+    7  vi /etc/selinux/config 
+    8  reboot
+    9  ip a
+   10  yum install ganglia rrdtool ganglia-gmetad ganglia-gmond ganglia-web
+   11  history
+
+------------------------------------------------------------------------------------
+
+    1  systemctl status firewalld.service 
+    2  systemctl stop firewalld.service 
+    4  hostnamectl set-hostname ganglia-server
+    5  systemctl stop firewalld
+    6  vi /etc/selinux/config
+	                 "selinux=disabled"
+    7  systemctl enable firewalld
+    8  systemctl stop firewalld
+    9  systemctl disable firewalld
+   10  reboot
+   11  ssh-keygen 
+   12  vi /etc/hosts
+   13  ssh-copy-id root@ganglia-client
+   14  ssh ganglia-client
+   15  ping ganglia-client
+   16  yum install epel-release
+   17  yum install ganglia rrdtool ganglia-gmetad ganglia-gmond ganglia-web 
+   20  htpasswd -c /etc/httpd/auth.basic adminganglia
+   21  vi  /etc/httpd/conf.d/ganglia.conf
+   
+					Alias /ganglia /usr/share/ganglia			
+					<Location /ganglia>
+					  AuthType basic
+						AuthName "Ganglia web UI"
+						AuthBasicProvider file
+						AuthUserFile "/etc/httpd/auth.basic"
+						Require user adminganglia
+					</Location>
+
+	22  vi  /etc/ganglia/gmetad.conf
+		
+					data_source "Labs" 60 192.168.174.167:8649 # ganglia-master
+					data_source "Labs" 60 192.168.174.156 # ganglia-client
+					gridname "Home office"
+					
+	23  vi  /etc/ganglia/gmond.conf
+	
+					
+cluster {
+  name = "Labs" # The name in the data_source directive in gmetad.conf
+  owner = "unspecified"
+  latlong = "unspecified"
+  url = "unspecified"
+}
+
+udp_send_channel {
+  #bind_hostname = yes # Highly recommended, soon to be default.
+                       # This option tells gmond to use a source address
+                       # that resolves to the machine's hostname.  Without
+                       # this, the metrics may appear to come from any
+                       # interface and the DNS names associated with
+                       # those IPs will be used to create the RRDs.
+  #mcast_join = 239.2.11.71
+  port = 8649
+  ttl = 1
+}
+
+udp_recv_channel {
+  #mcast_join = 239.2.11.71
+  port = 8649
+ # bind = 239.2.11.71
+  retry_bind = true
+  # Size of the UDP buffer. If you are handling lots of metrics you really
+  # should bump it up to e.g. 10MB or even higher.
+  # buffer = 10485760
+}
+
+   24  setsebool -P httpd_can_network_connect 1
+   25  systemctl restart httpd gmetad gmond
+   26  systemctl enable httpd gmetad httpd
+   27  ip a
+           
+		   Browser-----> http://<ganglia_master_ip>/ganglia
+		   
+	
+On Cllient Machine: 
+	
+	1 systemctl status firewalld.service 
+    2  systemctl stop firewalld.service 
+    3  ssh 192.168.174.146
+    4  hostnamectl set-hostname ganglia-client
+    5  systemctl stop firewalld
+    6  systemctl disable firewalld
+    7  vi /etc/selinux/config 
+    8  reboot
+   10  yum install ganglia rrdtool ganglia-gmetad ganglia-gmond ganglia-web
+   11  ssh ganglia-server 
+   12  vi /etc/ganglia/gmond.conf
+  
+  
+  cluster {
+  name = "Labs" # The name in the data_source directive in gmetad.conf
+  owner = "unspecified"
+  latlong = "unspecified"
+  url = "unspecified"
+}
+
+/* The host section describes attributes of the host, like the location */
+host {
+  location = "unspecified"
+}
+
+/* Feel free to specify as many udp_send_channels as you like.  Gmond
+   used to only support having a single channel */
+udp_send_channel {
+  #bind_hostname = yes # Highly recommended, soon to be default.
+                       # This option tells gmond to use a source address
+                       # that resolves to the machine's hostname.  Without
+                       # this, the metrics may appear to come from any
+                       # interface and the DNS names associated with
+                       # those IPs will be used to create the RRDs.
+  mcast_join = 239.2.11.71
+  port = 8649
+  ttl = 1
+}
+
+/* You can specify as many udp_recv_channels as you like as well. */
+udp_recv_channel {
+  mcast_join = 239.2.11.71
+  port = 8649
+  bind = 239.2.11.71
+  #retry_bind = true
+  # Size of the UDP buffer. If you are handling lots of metrics you really
+  # should bump it up to e.g. 10MB or even higher.
+  # buffer = 10485760
+}
+
+
+   25  systemctl restart httpd gmetad gmond
+   26  systemctl enable httpd gmetad httpd
+
+   
+   
